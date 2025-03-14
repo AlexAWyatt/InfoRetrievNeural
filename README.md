@@ -1,1 +1,1 @@
-# InfoRetrievNeural
+# InfoRetriNoNN

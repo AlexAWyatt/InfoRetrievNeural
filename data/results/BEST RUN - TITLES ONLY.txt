@@ -1,0 +1,32 @@
+BEST RUN - TITLES ONLY
+
+$ ./trec_eval test/test.test test/title_only_bm25_cos_sim_nltk_wrds_porter.test runid                   all     title_only_bm25_cos_sim_nltk_wrds_porter
+num_q                   all     300
+num_ret                 all     28606
+num_rel                 all     339
+num_rel_ret             all     238
+map                     all     0.3992
+gm_map                  all     0.0156
+Rprec                   all     0.3331
+bpref                   all     0.6976
+recip_rank              all     0.4115
+iprec_at_recall_0.00    all     0.4127
+iprec_at_recall_0.10    all     0.4127
+iprec_at_recall_0.20    all     0.4127
+iprec_at_recall_0.30    all     0.4090
+iprec_at_recall_0.40    all     0.4027
+iprec_at_recall_0.50    all     0.4022
+iprec_at_recall_0.60    all     0.3911
+iprec_at_recall_0.70    all     0.3907
+iprec_at_recall_0.80    all     0.3902
+iprec_at_recall_0.90    all     0.3902
+iprec_at_recall_1.00    all     0.3902
+P_5                     all     0.1020
+P_10                    all     0.0580
+P_15                    all     0.0413
+P_20                    all     0.0325
+P_30                    all     0.0230
+P_100                   all     0.0079
+P_200                   all     0.0040
+P_500                   all     0.0016
+P_1000                  all     0.0008
