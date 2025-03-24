@@ -17,7 +17,7 @@ app = Flask(__name__, static_url_path='')
 
 absolute_base_path = os.path.dirname(os.path.dirname(__file__))
 
-model = torch.load('\\main\\bert_model.1600000.pkl')
+model = torch.load('\\main\\bert_model.1600000.pkl') #currently can't add this file to the github, will try to fix
 model.args.max_seq_length = 256
 softmax = torch.nn.Softmax(dim=1)
 model.eval()
