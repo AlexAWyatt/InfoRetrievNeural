@@ -14,6 +14,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.stem.snowball import EnglishStemmer
+from neural_reranking import NeuralReRanker
 
 def main():
     # booleans to control parsing
@@ -123,14 +124,35 @@ def main():
                 print(f"Done Search {count}")
 
                 #convert_output_form(search_e.results, "test1").to_csv(results_file_path + "\\test_out.txt", header = None, index = None, sep = ' ')
-                output = convert_output_form(search_e.results, weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi])
+                output = convert_output_form(search_e.results, "title_only_" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi])
 
                 outputs.append(output)
 
-                save_list_output(output, results_file_path + "\\" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi] + ".test")
+                save_list_output(output, results_file_path + "\\title_only_" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi] + ".test")
 
     #save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
 
+    #neural reranking integration
+
+    #create mapping of docs of IDs
+    doc_id_to_text = {doc['DOCNO']: " ".join(doc['TEXT']) for doc in parsed_docs[0]}
+
+    #initialise, set to false to disable neural reranking
+    use_neural_reranking = True
+    reranker_model = "bert" #here is where we can change to "doc2vec"
+
+    neural_reranker = NeuralReRanker(model_type=reranker_model)
+    reranked_results = {}
+    for query_id, doc_scores in search_e.results.items():
+        top_doc_ids = list(doc_scores.keys())[:100]
+        top_doc_texts = [doc_id_to_text[doc_id] for doc_id in top_doc_ids]
+        # query is retrieved and converted to use, model re-ranks the top 100 docs.
+        reranked_list = neural_reranker.rerank(pair_usable_query(parsed_queries[0])[query_id], top_doc_texts)
+        #maintain the orginal doc IDs with ne ranking scores.
+        reranked_results[query_id] = {top_doc_ids[i]: score for i, (text, score) in enumerate(reranked_list)}
+
+    save_output(reranked_results, results_file_path + "\\neural_results.json")
+    print("Neural Re-ranking Completed and Results Saved!")
 
 if __name__ == "__main__":
     main()

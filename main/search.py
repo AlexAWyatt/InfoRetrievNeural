@@ -3,6 +3,7 @@ from collections import defaultdict # defaultdict is an object that automaticall
 from weighting_methods import *
 from utils import *
 from similarity_measures import *
+from neural_reranking import NeuralReRanker
 
 class SearchEngine:
     def __init__(self, model, similarity_measure = "cos_sim"):
@@ -58,7 +59,7 @@ class SearchEngine:
         return ranked_docs
 
     # all results are stored in an object tied to the specific instance of the SearchEngine class
-    def search(self, queries, run_name="my_run", num_top_docs = 100):
+    def search(self, queries, doc_id_to_text, run_name="my_run", num_top_docs = 100):
 
         for query_num, query_tokens in queries.items():
 
@@ -66,3 +67,14 @@ class SearchEngine:
             #rank the documents based on the selected method for the given query
             ranked_docs = self.rank_documents(query_tokens, query_num)
             self.results[query_num] = {doc_id: score for doc_id, score in ranked_docs[:num_top_docs]}
+
+            #if neural reranking is enabled
+            if self.use_neural_reranking:
+                top_doc_ids = list(self.results[query_num].keys())[:num_top_docs]
+                top_doc_texts = [doc_id_to_text[doc_id] for doc_id in top_doc_ids]
+                #perform Neural Re-Ranking using the model choosen
+                reranked_list = self.reranker.rerank(" ".join(query_tokens), top_doc_texts)
+                #update result
+                self.results[query_num] = {top_doc_ids[i]: score for i, (text, score) in enumerate(reranked_list)}
+
+            print("Search Completed (Including Neural Re-Ranking if Enabled)")

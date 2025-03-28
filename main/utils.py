@@ -25,20 +25,18 @@ def pair_usable_query(queries):
     return usable_queries
 
 # convert output into form interpretable by trec_eval
-def convert_output_form(outputs, run_name):
+def convert_output_form(outputs, run_name, use_neural_reranking=False):
     results = []
+    for query_id, ranked_docs in outputs.items():
+        for rank, (doc_id, score) in enumerate(ranked_docs.items()):
+            score = round(score, 7)
+            # format the result line according to TREC evaluation format
+            result_line = f"{query_id} Q0 {doc_id} {rank + 1} {score} {run_name}"
+            results.append(result_line)
 
-    for query in outputs:
+    if use_neural_reranking:
+        print("Neural Re-Ranking results formatted successfully!")
 
-        query_id = query
-
-        for rank, returns in enumerate(outputs[query]):
-
-            doc_id = returns
-            score = round(outputs[query][returns],7)
-            
-            results.append(f"{query_id} Q0 {doc_id} {rank + 1} {score} {run_name}")
-    
     return results
 
 #save the output
