@@ -16,6 +16,11 @@ from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.stem.snowball import EnglishStemmer
 from neural_reranking import NeuralReRanker
 
+# Two setups with the most relevant documents returned are
+# 1. tfidf_raw_score_ink_wrds_lancaster   308/339
+# 2. tfidf_raw_score_nltk_wrds_lancaster  307/339
+
+
 def main():
     # booleans to control parsing
     parse_docs = False
@@ -31,13 +36,17 @@ def main():
     # Processed files
     index_file_path = absolute_base_path + '\\data\\processed\\inverted_index.json'
     
-
+    # do not remove stopwords for neural net reranking, but we will remove to get our top results.
+    # So we need to match the doc and just get the stemmed version for reranking
     # Define which stopwords list to use
     # load in stopword files - 179 words
-    nltk.download('stopwords')
-    nltk.download('punkt_tab')
+
+    #nltk.download('stopwords')
+    #nltk.download('punkt_tab')
+
     #using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
-    stop_words1 = set(stopwords.words('english'))
+    
+    #stop_words1 = set(stopwords.words('english'))
 
     # read in StopWords List - 779 words
     stop_words2 = set()
@@ -46,13 +55,21 @@ def main():
             stop_words2.add(line.rstrip())
 
     # define stopwords
-    stop_words = [stop_words1, stop_words2]
-    stop_words_labels = ["nltk_wrds", "ink_wrds"]
+    #stop_words = [stop_words1, stop_words2]
+    #stop_words_labels = ["nltk_wrds", "ink_wrds"]
+
+    # define stopwords
+    stop_words = [stop_words2]
+    stop_words_labels = ["ink_wrds"]
 
     
     # Define stemmers
-    stemmers = [PorterStemmer(), LancasterStemmer(), EnglishStemmer()]
-    stemmer_labels = ["porter", "lancaster", "snowball"]
+    #stemmers = [PorterStemmer(), LancasterStemmer(), EnglishStemmer()]
+    #stemmer_labels = ["porter", "lancaster", "snowball"]
+
+    # Define stemmers
+    stemmers = [LancasterStemmer()]
+    stemmer_labels = ["lancaster"]
 
     parsed_docs = []
     parsed_queries = []
@@ -97,7 +114,10 @@ def main():
     print("Done Preprocessing")
 
     # define similarity measures
-    sim_measures = ["cos_sim", "raw_score"]
+    #sim_measures = ["cos_sim", "raw_score"]
+
+    # define similarity measures
+    sim_measures = ["raw_score"]
 
     inverted_indices = []
     
@@ -112,8 +132,12 @@ def main():
     count = 0
     for invi in range(len(inverted_indices)):
         # define weight methods
-        weight_mthds = [tf_idf(inverted_indices[invi], doc_lengths=collect_doc_lengths(parsed_docs[invi])), BM25(inverted_indices[invi], doc_lengths=collect_doc_lengths(parsed_docs[invi]))]
-        weight_mthds_lbls = ["tfidf", "bm25"]
+        #weight_mthds = [tf_idf(inverted_indices[invi], doc_lengths=collect_doc_lengths(parsed_docs[invi])), BM25(inverted_indices[invi], doc_lengths=collect_doc_lengths(parsed_docs[invi]))]
+        #weight_mthds_lbls = ["tfidf", "bm25"]
+
+        # define weight methods
+        weight_mthds = [tf_idf(inverted_indices[invi], doc_lengths=collect_doc_lengths(parsed_docs[invi]))]
+        weight_mthds_lbls = ["tfidf"]
 
         for mthdi in range(len(weight_mthds)):
             for sim_measure in sim_measures:
@@ -148,7 +172,7 @@ def main():
         top_doc_texts = [doc_id_to_text[doc_id] for doc_id in top_doc_ids]
         # query is retrieved and converted to use, model re-ranks the top 100 docs.
         reranked_list = neural_reranker.rerank(pair_usable_query(parsed_queries[0])[query_id], top_doc_texts)
-        #maintain the orginal doc IDs with ne ranking scores.
+        #maintain the orginal doc IDs with new ranking scores.
         reranked_results[query_id] = {top_doc_ids[i]: score for i, (text, score) in enumerate(reranked_list)}
 
     save_output(reranked_results, results_file_path + "\\neural_results.json")

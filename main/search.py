@@ -6,11 +6,13 @@ from similarity_measures import *
 from neural_reranking import NeuralReRanker
 
 class SearchEngine:
-    def __init__(self, model, similarity_measure = "cos_sim"):
+    def __init__(self, model, similarity_measure = "cos_sim", use_nn = False, reranker = None):
         self.method = model
         self.results = {} #dictionaries to store vectors for cosine similarity
         self.query_counts = {}
         self.similarity_measure = similarity_measure
+        self.use_neural_reranking = use_nn
+        self.reranker = reranker
 
     def retrieve_relevant_docs(self, query_tokens):
         doc_scores = defaultdict(float) #assigning each score to the document.
@@ -59,7 +61,7 @@ class SearchEngine:
         return ranked_docs
 
     # all results are stored in an object tied to the specific instance of the SearchEngine class
-    def search(self, queries, doc_id_to_text, run_name="my_run", num_top_docs = 100):
+    def search(self, queries, doc_id_to_text = False, run_name="my_run", num_top_docs = 100):
 
         for query_num, query_tokens in queries.items():
 
