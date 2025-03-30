@@ -4,6 +4,7 @@
 #TO DO pip install -U sentence-transformers
 import torch
 from sentence_transformers import SentenceTransformer, util
+import logging
 
 class PretrainedReRanker:
     def __init__(self, model_name='sentence-transformers/all-MiniLM-L6-v2', device=None, doc_vec = None):
@@ -14,10 +15,11 @@ class PretrainedReRanker:
         else:
             self.corp_vecs = {}
         self.ranked_docs = {}
+        logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
     # return a document vector for a given document (in string form)
     def get_doc_vec(self, doc):
-        return self.model.encode(doc, convert_to_tensor=True)
+        return self.model.encode(doc, convert_to_tensor=True, normalize_embeddings=True)
 
     # input 'corpus' is a dictionary of documents where key is the document id
     # get vecs for all of corpus and save based on id
@@ -44,14 +46,18 @@ class PretrainedReRanker:
         return ranked_docs
 
     # input is a list of queries and a list of search engine outputs showing each query and their relevant documents
-    def rank_all_docs(self, query_list, search_output):
+    def rank_all_docs(self, query_list, search_output, docs):
         fin_res = {}
 
         for query_id in query_list:
             search_q = search_output[query_id]
             rel_docs = list(search_q.keys())
             q_text = query_list[query_id]
-            fin_res[query_id] = {doc_id: score for doc_id, score in self.rank_documents_one_q(q_text,rel_docs)} 
+            num1 = self.rank_documents_one_q(q_text,rel_docs)[0]
+            new_q = q_text + docs[num1[0]]
+            fin_res[query_id] = {doc_id: score for doc_id, score in self.rank_documents_one_q(new_q,rel_docs)} 
+
+
 
         self.ranked_docs = fin_res
         return fin_res

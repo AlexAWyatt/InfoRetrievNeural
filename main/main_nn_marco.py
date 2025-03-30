@@ -1,8 +1,9 @@
-#most of the code here has been inspired from the assignment's example
+# most of the code here has been inspired from the assignment's example
 
-#importing section
+# importing section
 
 import os
+import json
 from os.path import dirname
 from parser import *
 from preprocessing import *
@@ -15,6 +16,8 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.stem.snowball import EnglishStemmer
+from neural_reranking import *
+
 
 # Two setups with the most relevant documents returned are
 # 1. tfidf_raw_score_ink_wrds_lancaster   308/339
@@ -38,10 +41,10 @@ def main():
 
     # Define which stopwords list to use
     # load in stopword files - 179 words
-    nltk.download('stopwords')
-    nltk.download('punkt_tab')
+    #nltk.download('stopwords')
+    #nltk.download('punkt_tab')
     #using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
-    stop_words1 = set(stopwords.words('english'))
+    #stop_words1 = set(stopwords.words('english'))
 
     # read in StopWords List - 779 words
     stop_words2 = set()
@@ -137,49 +140,20 @@ def main():
     #save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
 
     #print(search_e.results)
-    # preprocessing for doc2vec
-    
-    """ preprocessed_docs_path = absolute_base_path + '\\data\\processed\\preprocessed_docs_' + "nltk_wrds" + '_' + "porter" + '.json'
-    preprocessed_queries_path = absolute_base_path + '\\data\\processed\\preprocessed_queries_' + "nltk_wrds" + '_' + "porter" + '.json'
+    parsed_do = parse_documents_from_file_nn(doc_file_path)
+    parsed_quer = parse_queries_from_file_nn(query_file_path)
 
-    #documents = preprocess_documents(parse_documents_from_file(doc_file_path), removestopwords=True, stopwords=stop_words1, stem_text=True, stemmer = PorterStemmer())
-    #save_preprocessed_data(documents, preprocessed_docs_path)
-    #queries = preprocess_queries(parse_queries_from_file(query_file_path), removestopwords=True, stopwords=stop_words1, stem_text=True, stemmer = PorterStemmer())
-    #save_preprocessed_data(queries, preprocessed_queries_path)
+    model_name='cross-encoder/ms-marco-MiniLM-L6-v2'
+    nn_rank = CrossEncoderReranker(model_name=model_name, corpus = parsed_do, device = None)
 
-    documents=load_preprocessed_data(preprocessed_docs_path)
-    queries = load_preprocessed_data(preprocessed_queries_path) """
+    nn_rank.rank_all_docs(parsed_quer, search_e.results)
 
-    parsed_docs1 = parsed_docs[0]
-    parsed_queries1 = parsed_queries[0]
+    sim_measure = "cross_encode"
+    nn_method = "ms-marco-MiniLM-L6-v2"
 
-    # create index of corpus and queries - removed stop words etc for doc2vec
-    parsed_quer = dict()
-    for dic in parsed_queries1:
-        tmp = {dic['num']: " ".join(dic['query'])}
-        parsed_quer.update(tmp)
+    output = convert_output_form(nn_rank.ranked_docs, nn_method + '_' + sim_measure)
+    save_list_output(output, results_file_path + "\\" + nn_method + '_' + sim_measure + ".test")
 
-    parsed_do = dict()
-    for dic in parsed_docs1:
-        tmp = {dic['DOCNO']: (" ".join(dic['HEAD']) + " ".join(dic['TEXT']))}
-        parsed_do.update(tmp)
 
-    # need some hyperparameter tuning for doc2vec - some can be done here, but other must be done in the 'doc2vec_rank.py'
-    vec_size = 50 # change to 300 for tests
-    epochs = 50 # change to 50 for tests
-    min_count = 5
-    docvec = Doc2Vector(vector_size=vec_size, epochs = epochs, min_count=min_count)
-    docvec.train_doc2vec(parsed_do)
-    docvec.get_doc_vecs(parsed_do)
-
-    docvec.rank_all_docs(parsed_quer, search_e.results)
-
-    #print(f"\n\n\n{docvec.ranked_docs}")
-    sim_measure = "cossim"
-    nn_method = "doc2vec"
-
-    output = convert_output_form(docvec.ranked_docs, nn_method + '_' + sim_measure + '_vs' + str(vec_size) + '_epoch' + str(epochs) + '_mc' + str(min_count) + '_DBOW')
-    save_list_output(output, results_file_path + "\\" + nn_method + '_' + sim_measure + '_vs' + str(vec_size) + '_epoch' + str(epochs) + '_mc' + str(min_count) + '_DBOW' + ".test")
-    
 if __name__ == "__main__":
     main()

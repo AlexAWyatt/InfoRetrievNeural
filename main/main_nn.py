@@ -142,35 +142,22 @@ def main():
 
     #print(search_e.results)
 
-    '''
-    BERT prep and call here.
-    '''
-    """ print("Running BERT Reranking...")
-    bert_ranker = BERTReRanker()
-    for invi in range(len(inverted_indices)):
-        for mthdi in range(len(weight_mthds)):
-            reranked_results = bert_ranker.rank_all_docs(search_e.results, parsed_queries[invi])
-            print("BERT Reranking Done")
-
-    print("\nBERT Reranked Results:\n", json.dumps(reranked_results, indent=4)) """
-
     # create index of corpus and queries without preprocessing (for nn models)
     parsed_do = parse_documents_from_file_nn(doc_file_path)
     parsed_quer = parse_queries_from_file_nn(query_file_path)
 
-    print(len(list(parsed_do.keys())))
     model_name='sentence-transformers/all-MiniLM-L6-v2'
     nn_rank = PretrainedReRanker(model_name=model_name, device = None)
     nn_rank.get_doc_vecs(parsed_do)
 
-    nn_rank.rank_all_docs(parsed_quer, search_e.results)
+    nn_rank.rank_all_docs(parsed_quer, search_e.results, parsed_do)
 
-    print(f"\n\n\n{nn_rank.ranked_docs}")
     sim_measure = "cossim"
     nn_method = "all-MiniLM-L6-v2"
+    norm_embeddings = "normalized"
 
-    output = convert_output_form(nn_rank.ranked_docs, nn_method + '_' + sim_measure)
-    save_list_output(output, results_file_path + "\\" + nn_method + '_' + sim_measure + ".test")
+    output = convert_output_form(nn_rank.ranked_docs, nn_method + '_' + sim_measure + "_" + norm_embeddings)
+    save_list_output(output, results_file_path + "\\" + nn_method + '_' + sim_measure + "_" + norm_embeddings + ".test")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,16 @@
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
 from scipy.spatial import distance
+import logging
+
 
 class Doc2Vector:
     def __init__(self, vector_size, epochs, min_count = 1, seed = 5):
-        self.model = Doc2Vec(vector_size=vector_size, min_count=min_count, epochs=epochs, seed = seed)
+        self.model = Doc2Vec(vector_size=vector_size, min_count=min_count, seed = seed, dbow_words=1)
+        self.epochs = epochs
         self.corp_vecs = {}
         self.ranked_docs = {}
+        logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
     # input data is a dictionary with a key which is the document id and a value which is all the text for said id
     def train_doc2vec(self, data):
@@ -18,7 +22,7 @@ class Doc2Vector:
         print("\nBuilding Doc2Vec Vocabulary")
         self.model.build_vocab(tagged_data)
         print("\nTraining Doc2Vec")
-        self.model.train(tagged_data, total_examples=self.model.corpus_count, epochs=self.model.epochs)
+        self.model.train(tagged_data, total_examples=self.model.corpus_count, epochs=self.epochs)
     
     # return a document vector for a given document (in string form)
     def get_doc_vec(self, doc):
