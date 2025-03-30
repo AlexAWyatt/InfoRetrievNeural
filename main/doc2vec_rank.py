@@ -1,6 +1,6 @@
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from nltk.tokenize import word_tokenize
-from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial import distance
 
 class Doc2Vector:
     def __init__(self, vector_size, epochs, min_count = 1, seed = 5):
@@ -45,9 +45,7 @@ class Doc2Vector:
         query_vec = self.get_doc_vec(parsed_query)
 
         for doc_id in relevant_docs:
-            #similarities[doc_id] = cosine_similarity(query_vec, self.corp_vecs[doc_id])
-            print(f"\n\nQuery Vec: ", query_vec)
-            print(f"\n\nDoc Vec: ", self.corp_vecs[doc_id])
+            similarities[doc_id] = distance.cosine(query_vec, self.corp_vecs[doc_id])
 
         # TODO - MUST CHECK SCORES RETURNED AND IF THIS ORDERING IS WORKING CORRECTLY
         #sort the documents in descending order
@@ -62,7 +60,7 @@ class Doc2Vector:
             search_q = search_output[query_id]
             rel_docs = list(search_q.keys())
             q_text = query_list[query_id]
-            fin_res[query_id] = self.rank_documents_one_q(q_text,rel_docs)
+            fin_res[query_id] = {doc_id: score for doc_id, score in self.rank_documents_one_q(q_text,rel_docs)} 
         
         self.ranked_docs = fin_res
         return fin_res

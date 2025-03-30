@@ -144,15 +144,22 @@ def main():
 
     print(len(list(parsed_do.keys())))
 
-    vec_size = 50 # change to 300 for tests
-    epochs = 5 # change to 50 for tests
-    docvec = Doc2Vector(vector_size=vec_size, epochs = epochs)
+    # need some hyperparameter tuning for doc2vec - some can be done here, but other must be done in the 'doc2vec_rank.py'
+    vec_size = 200 # change to 300 for tests
+    epochs = 50 # change to 50 for tests
+    min_count = 2
+    docvec = Doc2Vector(vector_size=vec_size, epochs = epochs, min_count=min_count)
     docvec.train_doc2vec(parsed_do)
     docvec.get_relevant_doc_vecs(parsed_do)
 
     docvec.rank_all_docs(parsed_quer, search_e.results)
 
     print(f"\n\n\n{docvec.ranked_docs}")
+    sim_measure = "cossim"
+    nn_method = "doc2vec"
+
+    output = convert_output_form(docvec.ranked_docs, nn_method + '_' + sim_measure + '_vs' + str(vec_size) + '_epoch' + str(epochs) + '_mc' + str(min_count))
+    save_list_output(output, results_file_path + "\\" + nn_method + '_' + sim_measure + '_vs' + str(vec_size) + '_epoch' + str(epochs) + '_mc' + str(min_count) + ".test")
     
 if __name__ == "__main__":
     main()
