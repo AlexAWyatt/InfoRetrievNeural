@@ -3,39 +3,48 @@
 #installs
 #TO DO pip install -U sentence-transformers
 import torch
-from transformers import BertModel, BertTokenizer
-from gensim.models.doc2vec import Doc2Vec, TaggedDocument
-import numpy as np
+from transformers import BertTokenizer, BertModel
+from sklearn.metrics.pairwise import cosine_similarity
 
 
-class NeuralRetrieval:
-    def __init__(self, method="bert", doc2vec_model_path=None):
-        self.method = method
-        if method == "bert":
-            self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-            self.model = BertModel.from_pretrained("bert-base-uncased")
-        elif method == "doc2vec":
-            from gensim.models.doc2vec import Doc2Vec
-            self.model = Doc2Vec.load(doc2vec_model_path)
+class BERTReRanker:
+    def __init__(self, model_name='bert-base-uncased', device=None):
+        self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
+        self.tokenizer = BertTokenizer.from_pretrained(model_name)
+        self.model = BertModel.from_pretrained(model_name).to(self.device)
+        self.corp_vecs = {}
+        self.ranked_docs = {}
 
-    def compute_similarity(self, vec1, vec2):
-        vec1 = vec1.flatten()
-        vec2 = vec2.flatten()
-        return np.dot(vec1, vec2) / (
-                    np.linalg.norm(vec1) * np.linalg.norm(vec2) + 1e-8)  # Add small constant to avoid division by zero
+    def get_doc_vec(self, doc):
+        inputs = self.tokenizer(doc, return_tensors='pt', truncation=True, padding=True, max_length=512).to(self.device)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        return outputs.last_hidden_state[:, 0, :].cpu().numpy().flatten()
 
-    def encode(self, text):
-        if self.method == "bert":
-            inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-            return outputs.last_hidden_state[:, 0, :].numpy()
-        elif self.method == "doc2vec":
-            return self.model.infer_vector(text.split())
+    def get_relevant_doc_vecs(self, corpus):
+        vec_dict = {}
+        for doc_id, text in corpus.items():
+            vec_dict[doc_id] = self.get_doc_vec(text)
+        self.corp_vecs = vec_dict
+        return vec_dict
 
-    def rerank_documents(self, query, documents):
-        query_vector = self.encode(query)
-        doc_vectors = {doc_id: self.encode(text) for doc_id, text in doc_texts.items()}
-        scores = {doc_id: self.compute_similarity(query_vector, doc_vector) for doc_id, doc_vector in
-                  doc_vectors.items()}
-        return sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    def rank_documents_one_q(self, parsed_query, relevant_docs):
+        similarities = {}
+        query_vec = self.get_doc_vec(parsed_query)
+
+        for doc_id in relevant_docs:
+            similarities[doc_id] = cosine_similarity([query_vec], [self.corp_vecs[doc_id]])[0][0]
+
+        ranked_docs = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
+        return ranked_docs
+
+    def rank_all_docs(self, query_list, search_output):
+        fin_res = {}
+
+        for query_id, q_text in query_list.items():
+            rel_docs = search_output[
+                query_id] if query_id in search_output else []  # Get the list of relevant docs for the query
+            fin_res[query_id] = self.rank_documents_one_q(q_text, rel_docs)
+
+        self.ranked_docs = fin_res
+        return fin_res
