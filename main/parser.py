@@ -38,7 +38,7 @@ def parse_document_nn(document_line):
         'URL': doc.get('metadata',{}).get('url','NO_URL')
     }
 
-    res = {parsed_doc['DOCNO']: parsed_doc['HEAD'] + parsed_doc['TEXT']}
+    res = {parsed_doc['DOCNO']: parsed_doc['HEAD'] + " " + parsed_doc['TEXT']}
     return res
 
 #going through the document and taking it one line at a time
