@@ -27,6 +27,32 @@ def parse_document(document_line):
     }
     return parsed_doc
 
+def parse_document_nn(document_line):
+    doc = json.loads(document_line)
+
+    #for each document, we reformat it so that it is in the form below
+    parsed_doc = {
+        'DOCNO': doc['_id'],
+        'HEAD': doc.get('title','NO_TITLE'),
+        'TEXT': doc.get('text','NO_TEXT'),
+        'URL': doc.get('metadata',{}).get('url','NO_URL')
+    }
+
+    res = {parsed_doc['DOCNO']: parsed_doc['HEAD'] + parsed_doc['TEXT']}
+    return res
+
+#going through the document and taking it one line at a time
+def parse_documents_from_file_nn(file_path):
+    #we open the file
+    with open(file_path,'r',encoding='utf-8') as file:
+        #we save each document - processed in the current desired format - altogether.
+        parsed = [parse_document_nn(line) for line in file]
+        parsed_docs = dict()
+        for dic in parsed:
+            parsed_docs.update(dic)
+
+    return parsed_docs
+
 #going through the document and taking it one line at a time
 def parse_documents_from_file(file_path):
     #we open the file
@@ -49,4 +75,24 @@ def parse_query(query_line):
 def parse_queries_from_file(file_path):
     with open(file_path,'r',encoding='utf-8') as file:
         parsed_queries = [parse_query(line) for line in file]
+    return parsed_queries
+
+#taking each query and adding them to our document
+def parse_query_nn(query_line):
+    query = json.loads(query_line)
+    parsed_query = {
+        'num': query['_id'],
+        'query': query.get('text','NO_TEXT'),
+        'evidence': query.get('metadata',{})
+    }
+    res = {parsed_query['num']: parsed_query['query']}
+    return res
+
+#going through the query documents, reading the json line file and parsing each query
+def parse_queries_from_file_nn(file_path):
+    with open(file_path,'r',encoding='utf-8') as file:
+        parsed = [parse_query_nn(line) for line in file]
+        parsed_queries = dict()
+        for dic in parsed:
+            parsed_queries.update(dic)
     return parsed_queries
