@@ -4,7 +4,7 @@
 #TO DO pip install -U sentence-transformers
 import torch
 from transformers import BertTokenizer, BertModel
-from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial import distance
 
 
 class BERTReRanker:
@@ -33,7 +33,7 @@ class BERTReRanker:
         query_vec = self.get_doc_vec(parsed_query)
 
         for doc_id in relevant_docs:
-            similarities[doc_id] = cosine_similarity([query_vec], [self.corp_vecs[doc_id]])[0][0]
+            similarities[doc_id] = distance.cosine(query_vec, self.corp_vecs[doc_id])
 
         ranked_docs = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
         return ranked_docs

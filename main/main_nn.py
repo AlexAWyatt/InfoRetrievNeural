@@ -17,6 +17,7 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.stem.snowball import EnglishStemmer
 from neural_reranking import *
+from neural_reranking_minilm_l6 import *
 
 
 # Two setups with the most relevant documents returned are
@@ -28,32 +29,27 @@ def main():
     parse_docs = False
     parse_queries = False
 
-    # dataset logistics
+    #dataset logistics
     absolute_base_path = dirname(dirname(__file__))
-    dataset = absolute_base_path + "\\data\\scifact"  # this is where we will change the dataset that we use
+    dataset = absolute_base_path + "\\data\\scifact" #this is where we will change the dataset that we use
     doc_file_path = dataset + '\\corpus.jsonl'
     query_file_path = dataset + '\\queries.jsonl'
     results_file_path = absolute_base_path + "\\eval\\trec_eval-9.0.7\\test"
 
     # Processed files
     index_file_path = absolute_base_path + '\\data\\processed\\inverted_index.json'
+    
 
     # Define which stopwords list to use
     # load in stopword files - 179 words
-    # nltk.download('stopwords')
-    # nltk.download('punkt_tab')
-    # using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
-    # stop_words1 = set(stopwords.words('english'))
+    #nltk.download('stopwords')
+    #nltk.download('punkt_tab')
+    #using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
+    #stop_words1 = set(stopwords.words('english'))
 
     # read in StopWords List - 779 words
     stop_words2 = set()
-    '''
-    this doesnt work on my laptop
     with open(dataset_dir + "\\StopWords.txt") as file:
-        for line in file:
-            stop_words2.add(line.rstrip())
-      '''
-    with open(r"C:\Users\khesw\OneDrive\Desktop\Winter 2025\CSI 4107\this assignment\InfoRetrievNeural\data\StopWords.txt") as file:
         for line in file:
             stop_words2.add(line.rstrip())
 
@@ -61,6 +57,7 @@ def main():
     stop_words = [stop_words2]
     stop_words_labels = ["ink_wrds"]
 
+    
     # Define stemmers
     stemmers = [LancasterStemmer()]
     stemmer_labels = ["lancaster"]
@@ -74,14 +71,13 @@ def main():
         for stemmeri in range(len(stemmers)):
             descriptors.append(stop_words_labels[stop_wordi] + '_' + stemmer_labels[stemmeri])
 
-            preprocessed_docs_path = absolute_base_path + '\\data\\processed\\preprocessed_docs_' + stop_words_labels[
-                stop_wordi] + '_' + stemmer_labels[stemmeri] + '.json'
-            preprocessed_queries_path = absolute_base_path + '\\data\\processed\\preprocessed_queries_' + \
-                                        stop_words_labels[stop_wordi] + '_' + stemmer_labels[stemmeri] + '.json'
-            print(
-                f"Parsing the dataset with stopwords = {stop_words_labels[stop_wordi]} and stemmer = {stemmer_labels[stemmeri]}...")
-            documents = []
+            preprocessed_docs_path = absolute_base_path + '\\data\\processed\\preprocessed_docs_' + stop_words_labels[stop_wordi] + '_' + stemmer_labels[stemmeri] + '.json'
+            preprocessed_queries_path = absolute_base_path + '\\data\\processed\\preprocessed_queries_' + stop_words_labels[stop_wordi] + '_' + stemmer_labels[stemmeri] + '.json'
+            print(f"Parsing the dataset with stopwords = {stop_words_labels[stop_wordi]} and stemmer = {stemmer_labels[stemmeri]}...")
+            documents=[]
             queries = []
+
+            
 
             #preprocessing the documents
             if os.path.exists(preprocessed_docs_path) and not parse_docs:
@@ -89,34 +85,30 @@ def main():
                 documents = load_preprocessed_data(preprocessed_docs_path)
             else:
                 print("Preprocessing documents...")
-                #change params here to use different stemmer and different stop words list / to not use either
-                documents = preprocess_documents(parse_documents_from_file(doc_file_path), removestopwords=True,
-                                                 stopwords=stop_words[stop_wordi], stem_text=True,
-                                                 stemmer=stemmers[stemmeri])
+                # change params here to use different stemmer and different stop words list / to not use either
+                documents = preprocess_documents(parse_documents_from_file(doc_file_path), removestopwords=True, stopwords=stop_words[stop_wordi], stem_text=True, stemmer = stemmers[stemmeri])
                 save_preprocessed_data(documents, preprocessed_docs_path)
-
+            
             parsed_docs.append(documents)
 
-            # Preprocessing the queries if they have not been preprocessed yet
+            #Preprocessing the queries if they have not been preprocessed yet
             if os.path.exists(preprocessed_queries_path) and not parse_queries:
                 print("Loading preprocessed queries...")
-                queries = load_preprocessed_data(preprocessed_queries_path)
+                queries=load_preprocessed_data(preprocessed_queries_path)
             else:
                 print("Preprocessing queries...")
-                queries = preprocess_queries(parse_queries_from_file(query_file_path), removestopwords=True,
-                                             stopwords=stop_words[stop_wordi], stem_text=True,
-                                             stemmer=stemmers[stemmeri])
+                queries = preprocess_queries(parse_queries_from_file(query_file_path), removestopwords=True, stopwords=stop_words[stop_wordi], stem_text=True, stemmer = stemmers[stemmeri])
                 save_preprocessed_data(queries, preprocessed_queries_path)
-
+            
             parsed_queries.append(queries)
-
+    
     print("Done Preprocessing")
 
     # define similarity measures
     sim_measures = ["raw_score"]
 
     inverted_indices = []
-
+    
     # loop through all preprocessed documents and create an inverted index for each
     for doc in parsed_docs:
         # build inverted index
@@ -135,34 +127,50 @@ def main():
             for sim_measure in sim_measures:
                 count += 1
 
-                search_e = SearchEngine(weight_mthds[mthdi], similarity_measure=sim_measure)
+                search_e = SearchEngine(weight_mthds[mthdi], similarity_measure = sim_measure)
                 search_e.search(pair_usable_query(parsed_queries[invi]))
                 print(f"Done Search {count}")
 
-                #convert_output_form
-                output = convert_output_form(search_e.results,
-                                             weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi])
+                #convert_output_form(search_e.results, "test1").to_csv(results_file_path + "\\test_out.txt", header = None, index = None, sep = ' ')
+                output = convert_output_form(search_e.results, weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi])
 
                 outputs.append(output)
 
-                save_list_output(output, results_file_path + "\\" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' +
-                                 descriptors[invi] + ".test")
+                save_list_output(output, results_file_path + "\\" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi] + ".test")
 
-    # save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
+    #save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
 
-    # print(search_e.results)
+    #print(search_e.results)
 
     '''
     BERT prep and call here.
     '''
-    print("Running BERT Reranking...")
+    """ print("Running BERT Reranking...")
     bert_ranker = BERTReRanker()
     for invi in range(len(inverted_indices)):
         for mthdi in range(len(weight_mthds)):
             reranked_results = bert_ranker.rank_all_docs(search_e.results, parsed_queries[invi])
             print("BERT Reranking Done")
 
-    print("\nBERT Reranked Results:\n", json.dumps(reranked_results, indent=4))
+    print("\nBERT Reranked Results:\n", json.dumps(reranked_results, indent=4)) """
+
+    # create index of corpus and queries without preprocessing (for nn models)
+    parsed_do = parse_documents_from_file_nn(doc_file_path)
+    parsed_quer = parse_queries_from_file_nn(query_file_path)
+
+    print(len(list(parsed_do.keys())))
+    model_name='sentence-transformers/all-MiniLM-L6-v2'
+    nn_rank = PretrainedReRanker(model_name=model_name, device = None)
+    nn_rank.get_doc_vecs(parsed_do)
+
+    nn_rank.rank_all_docs(parsed_quer, search_e.results)
+
+    print(f"\n\n\n{nn_rank.ranked_docs}")
+    sim_measure = "cossim"
+    nn_method = "all-MiniLM-L6-v2"
+
+    output = convert_output_form(nn_rank.ranked_docs, nn_method + '_' + sim_measure)
+    save_list_output(output, results_file_path + "\\" + nn_method + '_' + sim_measure + ".test")
 
 
 if __name__ == "__main__":

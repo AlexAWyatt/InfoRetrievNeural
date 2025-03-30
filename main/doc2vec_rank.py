@@ -26,7 +26,7 @@ class Doc2Vector:
     
     # input 'corpus' is a dictionary of documents where key is the document id
     # get vecs for all of corpus and save based on id
-    def get_relevant_doc_vecs(self, corpus):
+    def get_doc_vecs(self, corpus):
         vec_dict = dict()
 
         for doc_id in corpus:

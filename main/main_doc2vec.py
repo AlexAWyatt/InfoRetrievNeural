@@ -142,15 +142,13 @@ def main():
     parsed_do = parse_documents_from_file_nn(doc_file_path)
     parsed_quer = parse_queries_from_file_nn(query_file_path)
 
-    print(len(list(parsed_do.keys())))
-
     # need some hyperparameter tuning for doc2vec - some can be done here, but other must be done in the 'doc2vec_rank.py'
-    vec_size = 200 # change to 300 for tests
+    vec_size = 300 # change to 300 for tests
     epochs = 50 # change to 50 for tests
-    min_count = 2
+    min_count = 1
     docvec = Doc2Vector(vector_size=vec_size, epochs = epochs, min_count=min_count)
     docvec.train_doc2vec(parsed_do)
-    docvec.get_relevant_doc_vecs(parsed_do)
+    docvec.get_doc_vecs(parsed_do)
 
     docvec.rank_all_docs(parsed_quer, search_e.results)
 
