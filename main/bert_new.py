@@ -1,9 +1,16 @@
 #inspired by https://medium.com/@Roy.Wong/step-by-step-guide-how-to-use-bert-word-embeddings-in-python-ac7b621771d8
+from os.path import dirname
+
+import nltk
 import torch
 from transformers import BertTokenizer, BertModel
 from scipy.spatial.distance import cosine
 import utils
+from preprocessing import dataset_dir
 
+
+def tokenize_documents(parsed_docs, tokenizer):
+    return [tokenizer.tokenize(" ".join(doc["TEXT"])) for doc in parsed_docs]
 def tokenize(): #code taken from main
 
     # booleans to control parsing
@@ -85,7 +92,8 @@ def tokenize(): #code taken from main
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-tokenizer.tokenize(parse_docs)
+tokenized_texts = [tokenizer.tokenize(" ".join(doc["TEXT"])) for doc in parsed_docs[0]]
+
 
 #get the ids of the tokens
 ids_tokens = tokenizer.convert_tokens_to_ids(tokenized_txt)

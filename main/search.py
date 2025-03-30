@@ -1,18 +1,19 @@
 import numpy as np
-from collections import defaultdict # defaultdict is an object that automatically assigns a value to key that has not been set before so that we dont get a key error
+from collections import defaultdict
 from weighting_methods import *
 from utils import *
 from similarity_measures import *
-from neural_reranking import NeuralReRanker
+
 
 class SearchEngine:
-    def __init__(self, model, similarity_measure = "cos_sim", use_nn = False, reranker = None):
+    def __init__(self, model, similarity_measure="cos_sim", use_nn=False, reranker=None, neural_method="bert"):
         self.method = model
-        self.results = {} #dictionaries to store vectors for cosine similarity
+        self.results = {}
         self.query_counts = {}
         self.similarity_measure = similarity_measure
         self.use_neural_reranking = use_nn
         self.reranker = reranker
+        self.neural_method = neural_method
 
     def retrieve_relevant_docs(self, query_tokens):
         doc_scores = defaultdict(float) #assigning each score to the document.
@@ -61,7 +62,7 @@ class SearchEngine:
         return ranked_docs
 
     # all results are stored in an object tied to the specific instance of the SearchEngine class
-    def search(self, queries, doc_id_to_text = False, run_name="my_run", num_top_docs = 100):
+    def search(self, queries, doc_id_to_text=False, run_name="my_run", num_top_docs=100):
 
         for query_num, query_tokens in queries.items():
 
@@ -73,10 +74,18 @@ class SearchEngine:
             #if neural reranking is enabled
             if self.use_neural_reranking:
                 top_doc_ids = list(self.results[query_num].keys())[:num_top_docs]
-                top_doc_texts = [doc_id_to_text[doc_id] for doc_id in top_doc_ids]
-                #perform Neural Re-Ranking using the model choosen
-                reranked_list = self.reranker.rerank(" ".join(query_tokens), top_doc_texts)
-                #update result
-                self.results[query_num] = {top_doc_ids[i]: score for i, (text, score) in enumerate(reranked_list)}
+                top_doc_texts = {doc_id: doc_id_to_text[doc_id] for doc_id in top_doc_ids}
+                # perform Neural Re-Ranking using the model choosen
+                reranked_list = self.reranker.rerank_documents(" ".join(query_tokens), top_doc_texts)
 
-            print("Search Completed (Including Neural Re-Ranking if Enabled)")
+                # update result
+                self.results[query_num] = {doc_id: score for doc_id, score in reranked_list}
+
+            #print("Search Completed (Including Neural Re-Ranking if Enabled)")
+
+    def search_and_rerank(query, initial_results, retrieval_model, method="bert"):
+        # Convert initial results to document text mapping
+        documents = {doc_id: doc_text for doc_id, doc_text in initial_results}
+
+        # Rerank using NeuralRetrieval
+        return retrieval_model.rerank_documents(query, documents, method=method)

@@ -1,7 +1,6 @@
 #most of the code here has been inspired from the assignment's example
 
 #importing section
-
 import os
 from os.path import dirname
 from parser import *
@@ -14,7 +13,8 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, LancasterStemmer
 from nltk.stem.snowball import EnglishStemmer
-from neural_reranking import NeuralReRanker
+from neural_reranking import NeuralRetrieval
+from bert_new import *
 
 # Two setups with the most relevant documents returned are
 # 1. tfidf_raw_score_ink_wrds_lancaster   308/339
@@ -27,6 +27,7 @@ def main():
     parse_queries = False
 
     #dataset logistics
+    retrieval = NeuralRetrieval(doc2vec_model_path='doc2vec.model')
     absolute_base_path = dirname(dirname(__file__))
     dataset = absolute_base_path + "\\data\\scifact" #this is where we will change the dataset that we use
     doc_file_path = dataset + '\\corpus.jsonl'
@@ -47,10 +48,15 @@ def main():
     #using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
     
     #stop_words1 = set(stopwords.words('english'))
-
+    '''
     # read in StopWords List - 779 words
     stop_words2 = set()
     with open(dataset_dir + "\\StopWords.txt") as file:
+        for line in file:
+            stop_words2.add(line.rstrip())
+    '''
+    stop_words2 = set()
+    with open("C:\\Users\\khesw\\OneDrive\\Desktop\\Winter 2025\\CSI 4107\\this assignment\\InfoRetrievNeural\\data\\StopWords.txt") as file:
         for line in file:
             stop_words2.add(line.rstrip())
 
@@ -97,8 +103,12 @@ def main():
                 # change params here to use different stemmer and different stop words list / to not use either
                 documents = preprocess_documents(parse_documents_from_file(doc_file_path), removestopwords=True, stopwords=stop_words[stop_wordi], stem_text=True, stemmer = stemmers[stemmeri])
                 save_preprocessed_data(documents, preprocessed_docs_path)
-            
+
             parsed_docs.append(documents)
+
+            # Apply BERT Tokenization to parsed documents
+            tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+            tokenized_docs = [tokenize_documents(docs, tokenizer) for docs in parsed_docs]
 
             #Preprocessing the queries if they have not been preprocessed yet
             if os.path.exists(preprocessed_queries_path) and not parse_queries:
@@ -113,22 +123,18 @@ def main():
     
     print("Done Preprocessing")
 
-    # define similarity measures
-    #sim_measures = ["cos_sim", "raw_score"]
+    tokenized_docs = [tokenize_documents(docs, tokenizer) for docs in parsed_docs]
 
     # define similarity measures
     sim_measures = ["raw_score"]
 
-    inverted_indices = []
-    
-    # loop through all preprocessed documents and create an inverted index for each
-    for doc in parsed_docs:
-        # build inverted index
-        inverted_indices.append(invert_index(doc))
-    print("Done Inverted Indices")
+    inverted_indices = [invert_index(doc) for doc in parsed_docs]
+
+    use_neural_reranking = True
+    reranker_model = "bert"
+    neural_reranker = NeuralRetrieval(method=reranker_model)
 
     outputs = []
-
     count = 0
     for invi in range(len(inverted_indices)):
         # define weight methods
@@ -143,8 +149,8 @@ def main():
             for sim_measure in sim_measures:
                 count += 1
 
-                search_e = SearchEngine(weight_mthds[mthdi], similarity_measure = sim_measure)
-                search_e.search(pair_usable_query(parsed_queries[invi]))
+                search_e = SearchEngine(weight_mthds[mthdi], similarity_measure=sim_measure,use_nn=use_neural_reranking, reranker=neural_reranker)
+                search_e.search(pair_usable_query(parsed_queries[invi]),doc_id_to_text={doc['DOCNO']: " ".join(doc['TEXT']) for doc in parsed_docs[invi]})
                 print(f"Done Search {count}")
 
                 #convert_output_form(search_e.results, "test1").to_csv(results_file_path + "\\test_out.txt", header = None, index = None, sep = ' ')
@@ -165,18 +171,15 @@ def main():
     use_neural_reranking = True
     reranker_model = "bert" #here is where we can change to "doc2vec"
 
-    neural_reranker = NeuralReRanker(model_type=reranker_model)
+    neural_reranker = NeuralRetrieval(method=reranker_model,doc2vec_model_path='doc2vec.model' if reranker_model == "doc2vec" else None)
     reranked_results = {}
     for query_id, doc_scores in search_e.results.items():
         top_doc_ids = list(doc_scores.keys())[:100]
-        top_doc_texts = [doc_id_to_text[doc_id] for doc_id in top_doc_ids]
-        # query is retrieved and converted to use, model re-ranks the top 100 docs.
-        reranked_list = neural_reranker.rerank(pair_usable_query(parsed_queries[0])[query_id], top_doc_texts)
-        #maintain the orginal doc IDs with new ranking scores.
-        reranked_results[query_id] = {top_doc_ids[i]: score for i, (text, score) in enumerate(reranked_list)}
+        top_doc_texts = {doc_id: doc_id_to_text[doc_id] for doc_id in top_doc_ids}
+        reranked_list = neural_reranker.rerank_documents(pair_usable_query(parsed_queries[0])[query_id], top_doc_texts)
+        reranked_results[query_id] = {doc_id: score for doc_id, score in reranked_list}
 
-    save_output(reranked_results, results_file_path + "\\neural_results.json")
+    save_output(reranked_results, results_file_path + "\neural_results.json")
     print("Neural Re-ranking Completed and Results Saved!")
-
 if __name__ == "__main__":
     main()
