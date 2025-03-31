@@ -131,22 +131,18 @@ def main():
                 search_e.search(pair_usable_query(parsed_queries[invi]))
                 print(f"Done Search {count}")
 
-                #convert_output_form(search_e.results, "test1").to_csv(results_file_path + "\\test_out.txt", header = None, index = None, sep = ' ')
                 output = convert_output_form(search_e.results, weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi])
 
                 outputs.append(output)
 
                 save_list_output(output, results_file_path + "\\" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi] + ".test")
 
-    #save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
-
-    #print(search_e.results)
-
     # create index of corpus and queries without preprocessing (for nn models)
     parsed_do = parse_documents_from_file_nn(doc_file_path)
     parsed_quer = parse_queries_from_file_nn(query_file_path)
 
     model_name='sentence-transformers/all-MiniLM-L6-v2'
+    # Initialize reranker model object
     nn_rank = PretrainedReRanker(model_name=model_name, device = None)
     nn_rank.get_doc_vecs(parsed_do)
 

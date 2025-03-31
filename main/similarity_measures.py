@@ -1,7 +1,5 @@
 import numpy as np
 
-## TODO: ADD OTHER SIMILARITY MEASURES
-
 # calculate the cosine similarity
 def calc_cos_similarity(query_scores, doc_scores):
     #initialising the query and doc vectors, the length of both vectors is the number of query tokens?
@@ -26,7 +24,6 @@ def calc_cos_similarity(query_scores, doc_scores):
 
     return numerator/denominator if denominator != 0 else 0.0
 
-# TODO: check that this is working
 def calc_raw_score(doc_scores):
     score = 0
     for token in doc_scores:

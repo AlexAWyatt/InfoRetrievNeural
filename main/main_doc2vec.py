@@ -32,17 +32,6 @@ def main():
     query_file_path = dataset + '\\queries.jsonl'
     results_file_path = absolute_base_path + "\\eval\\trec_eval-9.0.7\\test"
 
-    # Processed files
-    index_file_path = absolute_base_path + '\\data\\processed\\inverted_index.json'
-    
-
-    # Define which stopwords list to use
-    # load in stopword files - 179 words
-    nltk.download('stopwords')
-    nltk.download('punkt_tab')
-    #using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
-    stop_words1 = set(stopwords.words('english'))
-
     # read in StopWords List - 779 words
     stop_words2 = set()
     with open(dataset_dir + "\\StopWords.txt") as file:
@@ -134,11 +123,8 @@ def main():
 
                 save_list_output(output, results_file_path + "\\" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi] + ".test")
 
-    #save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
 
-    #print(search_e.results)
-    # preprocessing for doc2vec
-    
+    # code from attempts to preprocess with various strategies
     """ preprocessed_docs_path = absolute_base_path + '\\data\\processed\\preprocessed_docs_' + "nltk_wrds" + '_' + "porter" + '.json'
     preprocessed_queries_path = absolute_base_path + '\\data\\processed\\preprocessed_queries_' + "nltk_wrds" + '_' + "porter" + '.json'
 
@@ -164,17 +150,17 @@ def main():
         tmp = {dic['DOCNO']: (" ".join(dic['HEAD']) + " ".join(dic['TEXT']))}
         parsed_do.update(tmp)
 
-    # need some hyperparameter tuning for doc2vec - some can be done here, but other must be done in the 'doc2vec_rank.py'
-    vec_size = 50 # change to 300 for tests
-    epochs = 50 # change to 50 for tests
+    # many hyperparameter combinations tried
+    vec_size = 50
+    epochs = 50
     min_count = 5
+    # initialize Doc2Vec Object
     docvec = Doc2Vector(vector_size=vec_size, epochs = epochs, min_count=min_count)
     docvec.train_doc2vec(parsed_do)
     docvec.get_doc_vecs(parsed_do)
 
     docvec.rank_all_docs(parsed_quer, search_e.results)
 
-    #print(f"\n\n\n{docvec.ranked_docs}")
     sim_measure = "cossim"
     nn_method = "doc2vec"
 

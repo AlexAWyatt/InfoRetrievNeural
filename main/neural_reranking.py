@@ -1,7 +1,3 @@
-#this file handles reranking the top 100 results using deeplmodels
-
-#installs
-#TO DO pip install -U sentence-transformers
 import torch
 from sentence_transformers import CrossEncoder
 import logging
@@ -24,7 +20,6 @@ class CrossEncoderReranker:
         scores_tmp = self.model.predict(pairs)
         scores = {key:scores_tmp[ind] for ind, key in enumerate(relevant_docs)}
 
-        # TODO - MUST CHECK SCORES RETURNED AND IF THIS ORDERING IS WORKING CORRECTLY
         #sort the documents in descending order
         ranked_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return ranked_docs

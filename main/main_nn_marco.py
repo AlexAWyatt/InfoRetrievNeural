@@ -35,17 +35,6 @@ def main():
     query_file_path = dataset + '\\queries.jsonl'
     results_file_path = absolute_base_path + "\\eval\\trec_eval-9.0.7\\test"
 
-    # Processed files
-    index_file_path = absolute_base_path + '\\data\\processed\\inverted_index.json'
-    
-
-    # Define which stopwords list to use
-    # load in stopword files - 179 words
-    #nltk.download('stopwords')
-    #nltk.download('punkt_tab')
-    #using a set as it is easier to look up things from (in O(1) as opposed to O(n) from a list)
-    #stop_words1 = set(stopwords.words('english'))
-
     # read in StopWords List - 779 words
     stop_words2 = set()
     with open(dataset_dir + "\\StopWords.txt") as file:
@@ -130,20 +119,18 @@ def main():
                 search_e.search(pair_usable_query(parsed_queries[invi]))
                 print(f"Done Search {count}")
 
-                #convert_output_form(search_e.results, "test1").to_csv(results_file_path + "\\test_out.txt", header = None, index = None, sep = ' ')
                 output = convert_output_form(search_e.results, weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi])
 
                 outputs.append(output)
 
                 save_list_output(output, results_file_path + "\\" + weight_mthds_lbls[mthdi] + '_' + sim_measure + '_' + descriptors[invi] + ".test")
 
-    #save_inv_index(inverted_index,path) #replace path for the path you want to save inverted index to
-
-    #print(search_e.results)
+    # Parse documents and queries again for appropriate neural network input form
     parsed_do = parse_documents_from_file_nn(doc_file_path)
     parsed_quer = parse_queries_from_file_nn(query_file_path)
 
     model_name='cross-encoder/ms-marco-MiniLM-L6-v2'
+    # Initialize reranker model object
     nn_rank = CrossEncoderReranker(model_name=model_name, corpus = parsed_do, device = None)
 
     nn_rank.rank_all_docs(parsed_quer, search_e.results)

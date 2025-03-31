@@ -51,7 +51,6 @@ class Doc2Vector:
         for doc_id in relevant_docs:
             similarities[doc_id] = distance.cosine(query_vec, self.corp_vecs[doc_id])
 
-        # TODO - MUST CHECK SCORES RETURNED AND IF THIS ORDERING IS WORKING CORRECTLY
         #sort the documents in descending order
         ranked_docs = sorted(similarities.items(), key=lambda x:x[1], reverse=True)
         return ranked_docs

@@ -1,7 +1,3 @@
-#this file handles reranking the top 100 results using deeplmodels
-
-#installs
-#TO DO pip install -U sentence-transformers
 import torch
 from sentence_transformers import SentenceTransformer, util
 import logging
@@ -40,7 +36,6 @@ class PretrainedReRanker:
             # calculate cosine similarity and save as numeric
             similarities[doc_id] = util.pytorch_cos_sim(query_vec, self.corp_vecs[doc_id]).item()
 
-        # TODO - MUST CHECK SCORES RETURNED AND IF THIS ORDERING IS WORKING CORRECTLY
         #sort the documents in descending order
         ranked_docs = sorted(similarities.items(), key=lambda x: x[1], reverse=True)
         return ranked_docs

@@ -1,9 +1,3 @@
-# most of the code here has been inspired from the assignment's example
-
-# importing section
-
-import os
-import json
 from os.path import dirname
 from parser import *
 from preprocessing import *
@@ -25,7 +19,6 @@ def rank_documents_one_q(parsed_query, relevant_docs, corpus, model):
         scores_tmp = model.predict(pairs)
         scores = {key:scores_tmp[ind] for ind, key in enumerate(relevant_docs)}
 
-        # TODO - MUST CHECK SCORES RETURNED AND IF THIS ORDERING IS WORKING CORRECTLY
         #sort the documents in descending order
         ranked_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return ranked_docs[0:100]
@@ -52,9 +45,6 @@ def main():
     nn_rank = CrossEncoder(model_name=model_name, device = None)
 
     fin_res = {}
-    """ test = {}
-    for i in list(parsed_quer.keys())[0:5]:
-        test.update({i:parsed_quer[i]}) """
 
     for query_id in parsed_quer:
         q_text = parsed_quer[query_id]
